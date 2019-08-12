@@ -1,4 +1,5 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import os
 
 # Callbacks
 def add(bot, update):
@@ -24,13 +25,23 @@ def init_handlers(dispatcher):
 
 def main(): 
     TOKEN = "969707375:AAERFhml7PbV6NFzBA0r-5nHSCuXjBRHDmk"
+    NAME = "mygarybot"
+    PORT = os.environ.get('PORT')
     # base_url = "https://api.telegram.org/bot" + TOKEN + "/"
     updater = Updater(TOKEN)
-    dp = updater.dispatcher
-    init_handlers(dp)
-    
-    updater.start_polling()
+    init_handlers(updater.dispatcher)
+
+    updater.start_webhook(listen="0.0.0.0",
+                          port=int(PORT),
+                          url_path=TOKEN)
+    updater.start_webhook("https://{}.herokuapp.com/{}".format(NAME, TOKEN))
     updater.idle()
+    
+    
+    
+    # updater.start_polling()
+    # updater.idle()
+
 
 
  
