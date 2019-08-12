@@ -33,10 +33,10 @@ def main():
     updater = Updater(TOKEN)
     init_handlers(updater.dispatcher)
 
-    updater.start_webhook(listen="127.0.0.1",
+    updater.start_webhook(listen="0.0.0.0",
                           port=PORT,
                           url_path=TOKEN)
-    updater.start_webhook("https://{}.herokuapp.com/{}".format(NAME, TOKEN))
+    updater.start_webhook("https://{}.herokuapp.com/".format(NAME))
     updater.idle()
     
     
