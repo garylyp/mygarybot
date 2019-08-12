@@ -26,10 +26,10 @@ def init_handlers(dispatcher):
 def main(): 
     TOKEN = "969707375:AAERFhml7PbV6NFzBA0r-5nHSCuXjBRHDmk"
     NAME = "mygarybot"
-    # PORT = os.environ.get('PORT')
+    PORT = int(os.environ.get('PORT', '8443'))
     # pprint.pprint(dict(os.environ), indent=1)
-    # print(PORT)
-    PORT = 443
+    print(PORT)
+    # PORT = 443
     updater = Updater(TOKEN)
     init_handlers(updater.dispatcher)
 
