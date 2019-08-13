@@ -15,6 +15,7 @@ def help(bot, update):
     update.message.reply_text("A guide on " + main_content)
 
 def echo(bot, update):
+    pprint.pprint(dict(update))
     update.message.reply_text(update.message.text)
 
 
@@ -24,25 +25,28 @@ def init_handlers(dispatcher):
     dispatcher.add_handler(MessageHandler(Filters.text, echo))
 
 def main(): 
+    DEV = False
     TOKEN = "969707375:AAERFhml7PbV6NFzBA0r-5nHSCuXjBRHDmk"
     NAME = "mygarybot"
     PORT = int(os.environ.get('PORT', '8443'))
-    # pprint.pprint(dict(os.environ), indent=1)
-    print(PORT)
-    # PORT = 443
+
+
     updater = Updater(TOKEN)
+    # updater.bot.deleteWebhook()
     init_handlers(updater.dispatcher)
 
-    updater.start_webhook(listen="0.0.0.0",
-                          port=PORT,
-                          url_path=TOKEN)
-    updater.bot.setWebhook("https://{}.herokuapp.com/{}".format(NAME, TOKEN))
+    if DEV:
+        # updater.bot.deleteWebhook()
+        updater.start_polling()
+        
+    else:
+        updater.start_webhook(listen="0.0.0.0",
+                            port=PORT,
+                            url_path=TOKEN)
+        updater.bot.setWebhook("https://{}.herokuapp.com/{}".format(NAME, TOKEN))
+
     updater.idle()
     
-    
-    
-    # updater.start_polling()
-    # updater.idle()
 
 
 

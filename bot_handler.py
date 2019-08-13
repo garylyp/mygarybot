@@ -7,6 +7,9 @@ def get_updates_json(request):
     return response.json()
 
 def get_latest_update(data):
+    if len(data['result']) == 0:
+        print("No update available")
+        return None
     results = data['result']
     return results[-1]
 
@@ -24,9 +27,15 @@ def send_message_to_chat(request, chat_id, text):
 
 
 def get_updates_poll(url):
-    update_id = get_latest_update(get_updates_json(url))['update_id']
+    latest_update = get_latest_update(get_updates_json(url))
+    if (latest_update == None):
+        return
+
+    update_id = latest_update['update_id']
     while True:
-        latest_update = get_latest_update(get_updates_json(url))
+        if (latest_update == None):
+            continue
+
         if update_id == latest_update['update_id']:
             pretty_print(latest_update)
             echo_text = latest_update['message']['text']
@@ -44,8 +53,8 @@ def main():
     token = "969707375:AAERFhml7PbV6NFzBA0r-5nHSCuXjBRHDmk"
     url = "https://api.telegram.org/bot"
     request_url = url + token + "/"
-    # get_updates_poll(request_url)
-    pretty_print(get_updates_json(request_url))
+    get_updates_poll(request_url)
+    # pretty_print(get_updates_json(request_url))
 
     
 
