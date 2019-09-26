@@ -1,32 +1,73 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-import os, pprint
+from telegram.ext import *
+import os, pprint, json
+from sheets.quickstart import init, get_birthdays_from_sheet, get_recent_birthdays_reply
+
+ADD_EVENT_GUIDE = "/add - Add a new event\n"
+REMOVE_EVENT_GUIDE = "/remove - Remove an existing event\n"
+NEXT_EVENT_GUIDE = "/next - Display the next few upcoming events\n"
+SHOW_BIRTHDAYS_GUIDE = "/show_birthdays - Display the next few upcoming birthdays\n"
+TAKE_ATTENDANCE_GUIDE = "/take_attendance - Go into attendance taking mode\n"
+
+sheet = init()
 
 # Callbacks
 def add(bot, update):
-    command = "add"
+    command = "/add"
     text = update.message.text
-    main_content = text[text.index(command) + len(command) + 1:]
-    update.message.reply_text("Adding " + main_content)
+    main_content = "".join(text.split(command))
+    update.message.reply_text("Adding" + main_content, quote=False)
 
 def help(bot, update):
-    command = "help"
-    text = update.message.text
-    main_content = text[text.index(command) + len(command) + 1:]
-    update.message.reply_text("A guide on " + main_content)
+    main_content = "To begin, type in the following commands:\n\n" \
+        + SHOW_BIRTHDAYS_GUIDE \
+        + TAKE_ATTENDANCE_GUIDE
 
+    
+    update.message.reply_text(main_content, quote=False)
+
+def take_attendance(bot, update):
+    reply = "Enter name: "
+    update.message.reply_text(reply, quote=False)
+    # TODO: For each name submitted, check against attendance sheet and reply whether it is successfully taken or not
+    # TODO: for duplicate names like valerie chua, double confirm 
+    # TODO: Undo command
+
+def show_birthdays(bot, update):
+    print("Callback called:", "show_birthdays")
+    args = parse_arguments(update.message.text)
+    try:
+        months_from_today = int(args[0])
+    except:
+        months_from_today = 2
+    print(months_from_today)
+    reply = get_recent_birthdays_reply(months_from_today, sheet)
+    update.message.reply_text(reply, quote=False)
+
+
+# For debugging purposes
 def echo(bot, update):
-    pprint.pprint(dict(update))
-    update.message.reply_text(update.message.text)
+    update.message.reply_text(update.message.text, quote=True)
+
+HELP_COMMAND_HANDLER = CommandHandler("help", help)
+SHOW_BIRTHDAYS_COMMAND_HANDLER = CommandHandler("show_birthdays", show_birthdays)
+TAKE_ATTENDANCE_COMMAND_HANDLER = CommandHandler("take_attendance", take_attendance)
+
+def parse_arguments(text):
+    for i in range(len(text)-1):
+        if text[i] == " ":
+            return text[i+1:].split(" ")
+    return []
 
 
 def init_handlers(dispatcher):
-    dispatcher.add_handler(CommandHandler("add", add))
-    dispatcher.add_handler(CommandHandler("help", help))
-    dispatcher.add_handler(MessageHandler(Filters.text, echo))
+    dispatcher.add_handler(HELP_COMMAND_HANDLER)
+    dispatcher.add_handler(SHOW_BIRTHDAYS_COMMAND_HANDLER)
+    dispatcher.add_handler(TAKE_ATTENDANCE_COMMAND_HANDLER)
+    # dispatcher.add_handler(MessageHandler(Filters.text, echo))
 
 def main(): 
     DEV = False
-    TOKEN = "969707375:AAERFhml7PbV6NFzBA0r-5nHSCuXjBRHDmk"
+    TOKEN = "969707375:AAHFxeUbgV6crUysoahGFicOLLWmE8Pm4Xc"
     NAME = "mygarybot"
     PORT = int(os.environ.get('PORT', '8443'))
 
@@ -36,16 +77,17 @@ def main():
     init_handlers(updater.dispatcher)
 
     if DEV:
-        # updater.bot.deleteWebhook()
-        updater.start_polling()
+        print("Starting poll...")
+        updater.start_polling(clean=True)
+        updater.idle()
         
     else:
+        print("Starting webhook...")
         updater.start_webhook(listen="0.0.0.0",
                             port=PORT,
                             url_path=TOKEN)
         updater.bot.setWebhook("https://{}.herokuapp.com/{}".format(NAME, TOKEN))
-
-    updater.idle()
+        updater.idle()
     
 
 
