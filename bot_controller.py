@@ -59,7 +59,7 @@ def init_handlers(dispatcher):
     # dispatcher.add_handler(MessageHandler(Filters.text, echo))
 
 def main(): 
-    DEV = True
+    DEV = False
     TOKEN = "969707375:AAHFxeUbgV6crUysoahGFicOLLWmE8Pm4Xc"
     NAME = "mygarybot"
     PORT = int(os.environ.get('PORT', '8443'))
