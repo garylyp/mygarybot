@@ -1,14 +1,13 @@
 from telegram.ext import *
 import os, pprint, json
-from sheets.quickstart import init, get_birthdays_from_sheet, get_recent_birthdays_reply
+import datetime
+from sheets.quickstart import init_sheet, get_birthdays_from_sheet, get_recent_birthdays_reply
 
 ADD_EVENT_GUIDE = "/add - Add a new event\n"
 REMOVE_EVENT_GUIDE = "/remove - Remove an existing event\n"
 NEXT_EVENT_GUIDE = "/next - Display the next few upcoming events\n"
 SHOW_BIRTHDAYS_GUIDE = "/show_birthdays - Display the next few upcoming birthdays\n"
 TAKE_ATTENDANCE_GUIDE = "/take_attendance - Go into attendance taking mode\n"
-
-sheet = init()
 
 # Callbacks
 def add(bot, update):
@@ -21,8 +20,6 @@ def help(bot, update):
     main_content = "To begin, type in the following commands:\n\n" \
         + SHOW_BIRTHDAYS_GUIDE \
         + TAKE_ATTENDANCE_GUIDE
-
-    
     update.message.reply_text(main_content, quote=False)
 
 def take_attendance(bot, update):
@@ -33,24 +30,20 @@ def take_attendance(bot, update):
     # TODO: Undo command
 
 def show_birthdays(bot, update):
-    print("Callback called:", "show_birthdays")
+    print("Callback called:", "show_birthdays")  
     args = parse_arguments(update.message.text)
     try:
         months_from_today = int(args[0])
     except:
         months_from_today = 2
     print(months_from_today)
-    reply = get_recent_birthdays_reply(months_from_today, sheet)
+    reply = get_recent_birthdays_reply(months_from_today)
     update.message.reply_text(reply, quote=False)
 
 
 # For debugging purposes
 def echo(bot, update):
     update.message.reply_text(update.message.text, quote=True)
-
-HELP_COMMAND_HANDLER = CommandHandler("help", help)
-SHOW_BIRTHDAYS_COMMAND_HANDLER = CommandHandler("show_birthdays", show_birthdays)
-TAKE_ATTENDANCE_COMMAND_HANDLER = CommandHandler("take_attendance", take_attendance)
 
 def parse_arguments(text):
     for i in range(len(text)-1):
@@ -60,13 +53,13 @@ def parse_arguments(text):
 
 
 def init_handlers(dispatcher):
-    dispatcher.add_handler(HELP_COMMAND_HANDLER)
-    dispatcher.add_handler(SHOW_BIRTHDAYS_COMMAND_HANDLER)
-    dispatcher.add_handler(TAKE_ATTENDANCE_COMMAND_HANDLER)
+    dispatcher.add_handler(CommandHandler("help", help))
+    dispatcher.add_handler(CommandHandler("show_birthdays", show_birthdays))
+    dispatcher.add_handler(CommandHandler("take_attendance", take_attendance))
     # dispatcher.add_handler(MessageHandler(Filters.text, echo))
 
 def main(): 
-    DEV = False
+    DEV = True
     TOKEN = "969707375:AAHFxeUbgV6crUysoahGFicOLLWmE8Pm4Xc"
     NAME = "mygarybot"
     PORT = int(os.environ.get('PORT', '8443'))

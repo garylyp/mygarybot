@@ -1,9 +1,12 @@
 from __future__ import print_function
 import pickle
+import datetime
 import os.path
+
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+
 
 import json
 
@@ -18,7 +21,7 @@ ATTENDANCE_SHEET_ID = '1XfjN4aiK4wVaioNYep8Wsfqww3yVJQEfB47zekmMmOQ'
 ATTENDANCE_RANGE = '1st Quarter!A:AF'
 
 # TODO: Make this an object instead. Initialize a sheet object which you can constantly call upon
-def init():
+def init_sheet():
     """Shows basic usage of the Sheets API.
     Prints values from a sample spreadsheet.
     """
@@ -55,10 +58,20 @@ def get_birthdays_from_sheet(sheet):
     
     list_of_birthday = result.get('values', [])
     # print(json.dumps(values, indent=4))
+    filename = "./birthday_sheet_{}.txt".format(datetime.date.today().strftime("%d%m%y"))
+    if not os.path.exists(filename):
+        with open(filename, 'wb') as fp:
+            pickle.dump(list_of_birthday, fp)
     return list_of_birthday
 
-def get_recent_birthdays_reply(months_from_today, sheet):
-    list_of_birthday = get_birthdays_from_sheet(sheet)
+def get_recent_birthdays_reply(months_from_today):
+    filename = "./birthday_sheet_{}.csv".format(datetime.date.today().strftime("%d%m%y"))
+    if not os.path.exists(filename):
+        list_of_birthday = get_birthdays_from_sheet(init_sheet())
+    else:
+        with open (filename, 'rb') as fp:
+            list_of_birthday = pickle.load(fp)
+
     recent = get_recent_birthdays(list_of_birthday, months_from_today)
     output = "List of birthdays ({} months from now):\n\n".format(months_from_today)
     for row in recent:
@@ -105,4 +118,4 @@ def get_attendance_from_sheet(sheet):
 
 
 
-# print(get_recent_birthdays_reply(1, init()))
+print(get_recent_birthdays_reply(1))
