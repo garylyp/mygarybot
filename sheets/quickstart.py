@@ -73,10 +73,11 @@ def get_recent_birthdays_reply(months_from_today):
             list_of_birthday = pickle.load(fp)
 
     recent = get_recent_birthdays(list_of_birthday, months_from_today)
-    output = "List of birthdays ({} months from now):\n\n".format(months_from_today)
-    for row in recent:
-        output += "{}    {}\n".format(row[2], row[0])
-    print(output)
+    output = "Birthdays in next {} month(s):\n".format(months_from_today)
+    for row in recent[1:]:
+        full_name = row[0]
+        full_name_capitalized = " ".join([word.capitalize() for word in full_name.split(" ")])
+        output += "{} : {}\n".format(row[2], full_name_capitalized)
     return output
 
 
@@ -88,22 +89,18 @@ def get_recent_birthdays(list_of_birthday, months_from_today):
         # recent = []
         # today = int(list_of_birthday[0][4])
         curr_month = int(list_of_birthday[0][5])
-        filtered_list = filter(lambda row : is_recent(int(row[5]), curr_month, months_from_today), list_of_birthday[1:])
+        filtered_list = [row for row in list_of_birthday if is_recent(int(row[5]), curr_month, months_from_today)]
+        filtered_list.sort(key = lambda row : int(row[5]) if int(row[5]) >= curr_month else int(row[5]) + 12)
     return filtered_list
 
 def is_recent(birth_month, curr_month, months_from_today):
-    # if (months_from_today < 0):
-    #     months_from_today = (-months_from_today) % 12
-    #     lower_limit = (curr_month + 12 - months_from_today) % 12
-    # print("Current month: ", curr_month)
     if months_from_today >= 0:
-        months_from_today = months_from_today % 12
         end_month = curr_month + months_from_today
-        if end_month < 12:
-            return curr_month <= birth_month < end_month
-        else:
-            return curr_month <= birth_month < end_month or \
-                0 < birth_month < (curr_month + months_from_today) % 12
+        if birth_month < curr_month: 
+            birth_month += 12
+        return end_month >= birth_month
+    else:
+        return False
 
 
 def get_attendance_from_sheet(sheet):
@@ -113,9 +110,18 @@ def get_attendance_from_sheet(sheet):
     full_attendance_sheet = result.get('values', [])
     # print(json.dumps(values, indent=4))
     for i in range(2,30):
-        print("{}\t{}", full_attendance_sheet[1], full_attendance_sheet[2])
+        print("{}: {}", full_attendance_sheet[1], full_attendance_sheet[2])
     return full_attendance_sheet
 
 
+print("11 month")
+print(get_recent_birthdays_reply(2))
 
-print(get_recent_birthdays_reply(1))
+print("6 month")
+print(get_recent_birthdays_reply(6))
+
+print("12 month")
+print(get_recent_birthdays_reply(12))
+
+print("25 month")
+print(get_recent_birthdays_reply(25))
