@@ -35,7 +35,7 @@ def show_birthdays(bot, update):
     try:
         months_from_today = int(args[0])
     except:
-        months_from_today = 2
+        months_from_today = 1
     print(months_from_today)
     reply = get_recent_birthdays_reply(months_from_today)
     update.message.reply_text(reply, quote=False)
@@ -66,7 +66,7 @@ def main():
 
 
     updater = Updater(TOKEN)
-    # updater.bot.deleteWebhook()
+    # updater.bot.deleteWebhook() // Not needed
     init_handlers(updater.dispatcher)
 
     if DEV:
