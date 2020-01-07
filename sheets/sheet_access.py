@@ -2,6 +2,8 @@ from __future__ import print_function
 import pickle
 import datetime
 import os.path
+import glob
+import csv
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -57,23 +59,32 @@ def get_birthdays_from_sheet(sheet):
                                 range=BIRTHDAY_RANGE).execute()
     
     list_of_birthday = result.get('values', [])
-    # print(json.dumps(values, indent=4))
-    filename = "./birthday_sheet_{}.txt".format(datetime.date.today().strftime("%d%m%y"))
-    if not os.path.exists(filename):
-        with open(filename, 'wb') as fp:
-            pickle.dump(list_of_birthday, fp)
+    # print(json.dumps(list_of_birthday, indent=4))
     return list_of_birthday
 
 def get_recent_birthdays_reply(months_from_today):
-    filename = "./birthday_sheet_{}.csv".format(datetime.date.today().strftime("%d%m%y"))
+    filename = "./birthday_sheet_{}.csv".format(datetime.date.today().strftime("%m%y"))
+    
+    # Load contents from new sheet if file does not exist
     if not os.path.exists(filename):
         list_of_birthday = get_birthdays_from_sheet(init_sheet())
+
+        all_files = glob.glob("./birthday_sheet*")
+        for f in all_files:
+            os.remove(f)
+        with open(filename, 'w') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerows(list_of_birthday)
+    
+    # Read from existing file if file exists
     else:
-        with open (filename, 'rb') as fp:
-            list_of_birthday = pickle.load(fp)
+        with open (filename, 'r') as csvfile:
+            csv_reader = csv.reader(csvfile)
+            list_of_birthday = csv_reader_to_list(csv_reader)
+
 
     recent = get_recent_birthdays(list_of_birthday, months_from_today)
-    output = "Birthdays in next {} month(s):\n".format(months_from_today)
+    output = "Upcoming Birthdays:\n"
     for row in recent[1:]:
         full_name = row[0]
         full_name_capitalized = " ".join([word.capitalize() for word in full_name.split(" ")])
@@ -108,20 +119,28 @@ def get_attendance_from_sheet(sheet):
                                 range=ATTENDANCE_RANGE).execute()
     
     full_attendance_sheet = result.get('values', [])
-    # print(json.dumps(values, indent=4))
+    # print(json.dumps(full_attendance_sheet, indent=4))
     for i in range(2,30):
         print("{}: {}", full_attendance_sheet[1], full_attendance_sheet[2])
     return full_attendance_sheet
 
+def csv_reader_to_list(csv_reader):
+    ls = []
+    for row in csv_reader:
+        # To filter out rows with incomplete data
+        if len(row) < 8: 
+            continue
+        ls.append(row)
+    return ls 
 
-print("11 month")
-print(get_recent_birthdays_reply(2))
+# print("2 month")
+# print(get_recent_birthdays_reply(2))
 
-print("6 month")
-print(get_recent_birthdays_reply(6))
+# print("6 month")
+# print(get_recent_birthdays_reply(6))
 
-print("12 month")
-print(get_recent_birthdays_reply(12))
+# print("12 month")
+# print(get_recent_birthdays_reply(12))
 
-print("25 month")
-print(get_recent_birthdays_reply(25))
+# print("25 month")
+# print(get_recent_birthdays_reply(25))

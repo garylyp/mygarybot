@@ -1,7 +1,7 @@
 from telegram.ext import *
 import os, pprint, json
 import datetime
-from sheets.quickstart import init_sheet, get_birthdays_from_sheet, get_recent_birthdays_reply
+from sheets.sheet_access import init_sheet, get_birthdays_from_sheet, get_recent_birthdays_reply
 
 ADD_EVENT_GUIDE = "/add - Add a new event\n"
 REMOVE_EVENT_GUIDE = "/remove - Remove an existing event\n"
@@ -36,7 +36,6 @@ def show_birthdays(bot, update):
         months_from_today = int(args[0])
     except:
         months_from_today = 1
-    print(months_from_today)
     reply = get_recent_birthdays_reply(months_from_today)
     update.message.reply_text(reply, quote=False)
 
@@ -59,7 +58,7 @@ def init_handlers(dispatcher):
     # dispatcher.add_handler(MessageHandler(Filters.text, echo))
 
 def main(): 
-    DEV = False
+    DEV = True
     TOKEN = "969707375:AAHFxeUbgV6crUysoahGFicOLLWmE8Pm4Xc"
     NAME = "mygarybot"
     PORT = int(os.environ.get('PORT', '8443'))
