@@ -9,6 +9,8 @@ NEXT_EVENT_GUIDE = "/next - Display the next few upcoming events\n"
 SHOW_BIRTHDAYS_GUIDE = "/show_birthdays - Display the next few upcoming birthdays\n"
 TAKE_ATTENDANCE_GUIDE = "/take_attendance - Go into attendance taking mode\n"
 
+# TODO Implement OOP for BotController
+
 # Callbacks
 def add(bot, update):
     command = "/add"
@@ -26,7 +28,6 @@ def take_attendance(bot, update):
     reply = "Enter name: "
     update.message.reply_text(reply, quote=False)
     # TODO: For each name submitted, check against attendance sheet and reply whether it is successfully taken or not
-    # TODO: for duplicate names like valerie chua, double confirm 
     # TODO: Undo command
 
 def show_birthdays(bot, update):
@@ -65,7 +66,6 @@ def main():
 
 
     updater = Updater(TOKEN)
-    # updater.bot.deleteWebhook() // Not needed
     init_handlers(updater.dispatcher)
 
     if DEV:

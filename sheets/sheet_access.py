@@ -4,6 +4,8 @@ import datetime
 import os.path
 import glob
 import csv
+import difflib
+import numpy as np
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -13,14 +15,18 @@ from google.auth.transport.requests import Request
 import json
 
 # If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+# SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+# SCOPES = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
+SCOPES = ['https://www.googleapis.com/auth/drive']
 
 # The ID and range of a sample spreadsheet.
 BIRTHDAY_SHEET_ID ='1LuVv62bj1DD-whvJydT_maMMbe7h3yWQYXzB-PkKDJQ'
 BIRTHDAY_RANGE = 'AY1920!A:J'
 # TODO: Should test on a dummy attendance sheet first
 ATTENDANCE_SHEET_ID = '1XfjN4aiK4wVaioNYep8Wsfqww3yVJQEfB47zekmMmOQ'
-ATTENDANCE_RANGE = '1st Quarter!A:AF'
+ATTENDANCE_SHEET_NAME = '2nd Quarter'
+ATTENDANCE_SHEET_RANGE = 'A:AG'
+ATTENDANCE_RANGE = ATTENDANCE_SHEET_NAME + '!' + ATTENDANCE_SHEET_RANGE
 
 # TODO: Make this an object instead. Initialize a sheet object which you can constantly call upon
 def init_sheet():
@@ -114,16 +120,6 @@ def is_recent(birth_month, curr_month, months_from_today):
         return False
 
 
-def get_attendance_from_sheet(sheet):
-    result = sheet.values().get(spreadsheetId=ATTENDANCE_SHEET_ID,
-                                range=ATTENDANCE_RANGE).execute()
-    
-    full_attendance_sheet = result.get('values', [])
-    # print(json.dumps(full_attendance_sheet, indent=4))
-    for i in range(2,30):
-        print("{}: {}", full_attendance_sheet[1], full_attendance_sheet[2])
-    return full_attendance_sheet
-
 def csv_reader_to_list(csv_reader):
     ls = []
     for row in csv_reader:
@@ -144,3 +140,224 @@ def csv_reader_to_list(csv_reader):
 
 # print("25 month")
 # print(get_recent_birthdays_reply(25))
+
+class AttendanceSheetManager():
+    def __init__(self, spreadsheet):
+        
+
+        self.sheet = spreadsheet
+        self.attendance_sheet = self.get_attendance_from_sheet()
+        self.date_row = 1
+        self.date_col_start = 2
+        self.date_col_end = len(self.attendance_sheet[1])
+        self.today = datetime.datetime.strptime(self.attendance_sheet[0][1], "%d/%m/%Y")
+        self.curr_year = int(self.attendance_sheet[0][0])
+        self.name_row_start = 2
+        self.name_row_end = len(self.attendance_sheet)
+        self.name_col = 1
+
+        self.dates = self.get_training_dates()
+        self.names = self.get_names()
+
+        
+
+    def get_attendance_from_sheet(self):
+        # Allows Sheet ID and Attendance Range to be decided by user input
+        result = self.sheet.values().get(spreadsheetId=ATTENDANCE_SHEET_ID,
+                                    range=ATTENDANCE_RANGE).execute()
+        
+        full_attendance_sheet = result.get('values', [])
+        # print(json.dumps(full_attendance_sheet, indent=4))
+        return full_attendance_sheet
+
+
+    def get_training_dates(self):
+        """
+        Returns the full list of training days specified in the selected sheet of the spreadsheet.
+        """
+        dates_string = self.attendance_sheet[self.date_row][self.date_col_start:self.date_col_end]
+        earliest_month = int(dates_string[0].split('/')[1])
+        latest_month = int(dates_string[-1].split('/')[1])
+        dates = [self.process_dates(ds, self.curr_year, earliest_month, latest_month) for ds in dates_string]
+        return dates
+
+    def process_dates(self, date_string, curr_year, earliest_month, latest_month):
+        """
+        Process the dates by ending the respective YEAR to the dd/mm entries taken from the spreadsheet.
+        """       
+        given_month = int(date_string.split("/")[1])
+        if earliest_month % 12 <= given_month <= latest_month:
+            standard_date = "/" + str(curr_year) + " 235959"
+            return datetime.datetime.strptime(date_string + standard_date, "%d/%m/%Y %H%M%S")
+        else:
+            standard_date = "/" + str(curr_year - 1) + " 235959"
+            return datetime.datetime.strptime(date_string + standard_date, "%d/%m/%Y %H%M%S")
+
+
+    
+    def get_names(self):
+        return [self.attendance_sheet[row][self.name_col] for row in range(self.name_row_start, self.name_row_end)]
+        
+
+
+    def get_next_date(self):
+        """
+        Returns the next upcoming training date from today.
+        """
+        TODAY = datetime.datetime.now()
+        for d in self.dates:
+            if TODAY <= d:
+                return d
+        return datetime.datetime.min
+
+    def get_col_idx(self, next_date):
+        if next_date == datetime.datetime.min:
+            return -1
+        else:
+            return self.dates.index(next_date) + self.date_col_start
+
+    def get_row_idx(self, name):
+        idx = self.names.index(name)
+        return idx + self.name_row_start 
+
+    def get_close_match(self, input_name):
+        num = 3
+        WEIGHT = [0.5, 0.2, 0.3]
+        IS_JUNK = lambda x: x in "-',"
+
+        names = [n.lower() for n in self.names]
+        test = input_name.lower()
+
+        score = [0 for i in range(len(names))]
+        for i in range(len(names)):
+            name = names[i]
+
+            # Exact Match
+            if name == test:
+                score[i] = 1
+                continue
+
+            # Partial Match
+            test_split = test.split(" ")
+            name_split = name.split(" ")
+            for t in test_split:
+                for n in name_split:
+                    if t == n:
+                        score[i] += 1
+            
+            score[i] *= (WEIGHT[0])
+            
+            # Current Attendance
+            percentage = self.get_attendance_for_member(self.names[i]) / self.get_attendance_for_member('TOTAL')
+            score[i] += percentage * WEIGHT[1]
+                
+
+            # Similar sequence
+            a = difflib.SequenceMatcher(IS_JUNK, name, test).ratio()
+            b = difflib.SequenceMatcher(IS_JUNK, test, name).ratio()
+            score[i] += WEIGHT[2] * (a + b) / 2
+
+            if name in "total":
+                score[i] = 0
+
+
+        sorted_score = sorted(score, reverse=True)[:num]
+        idx = [score.index(s) for s in sorted_score]
+        
+        
+        closest_match = [self.names[i] for i in idx]
+        
+        diff = (2 * sorted_score[0] - sorted_score[1] - sorted_score[2] )
+        return closest_match, diff
+    
+
+    def get_attendance_for_member(self, name):
+        row_idx = self.get_row_idx(name)
+        attendance = sum([int(n) for n in self.attendance_sheet[row_idx][self.date_col_start:self.date_col_end] if n != ''])
+        return attendance
+
+    def get_range(self, name, date):
+        col_idx = self.get_col_idx(date) 
+        row_idx = self.get_row_idx(name) + 1 # Because excel starts from index 1
+        if col_idx < 0:
+            raise ValueError("Spreadsheet outdated. Provide the URL to the new spreadsheet")
+        if row_idx < 0:
+            raise ValueError("Name not found.")
+
+        col_range = chr(ord('A') + col_idx)
+        range = ATTENDANCE_SHEET_NAME + '!' + str(col_range) + str(row_idx)
+        return range
+
+    def mark_present(self, name, date):
+        range = self.get_range(name, date)
+        self.sheet.values().update(
+            spreadsheetId=ATTENDANCE_SHEET_ID,
+            range=range,
+            valueInputOption='USER_ENTERED',
+            body={'values':[[1]]}
+        ).execute()
+
+    def mark_absent(self, name, date):
+        range = self.get_range(name, date)
+        self.sheet.values().update(
+            spreadsheetId=ATTENDANCE_SHEET_ID,
+            range=range,
+            valueInputOption='USER_ENTERED',
+            body={'values':[[""]]}
+        ).execute()
+
+    # Telegram Bot Entry Point
+    def submit_name_to_mark_present(self, input_name, input_date=None):
+        SUCCESS_MESSAGE = "{} is marked PRESENT on {}"
+        FAILURE_MESSAGE = "Unable to verify name. Select a name below if it matches.\n" + \
+            "(1) {}\n" + \
+            "(2) {}\n" + \
+            "(3) {}"
+
+        names, diff = self.get_close_match(input_name)
+        if input_date is None:
+            date = self.get_next_date()
+        else:
+            date = datetime.datetime.strptime(input_date + "/" + self.curr_year, "%d/%m%Y")
+
+        if diff > 0.15:
+            self.mark_present(names[0], date)
+            return SUCCESS_MESSAGE.format(names[0], date.strftime("%d/%m/%y"))
+
+        else:
+            return FAILURE_MESSAGE.format(names[0], names[1], names[2])
+
+    def submit_name_to_mark_absent(self, input_name, input_date=None):
+        SUCCESS_MESSAGE = "{} is marked ABSENT on {}"
+        FAILURE_MESSAGE = "Unable to verify name. Select a name below if it matches.\n" + \
+            "(1) {}\n" + \
+            "(2) {}\n" + \
+            "(3) {}"
+
+        names, diff = self.get_close_match(input_name)
+        if input_date is None:
+            date = self.get_next_date()
+        else:
+            date = datetime.datetime.strptime(input_date + "/" + self.curr_year, "%d/%m%Y")
+
+        if diff > 0.15:
+            self.mark_absent(names[0], date)
+            return SUCCESS_MESSAGE.format(names[0], date.strftime("%d/%m/%y"))
+
+        else:
+            return FAILURE_MESSAGE.format(names[0], names[1], names[2])
+        
+
+
+    
+
+def main():
+    attendance_sheet_manager = AttendanceSheetManager(init_sheet())
+    # print(attendance_sheet_manager.get_attendance_for_member("Lim Yan Peng, Gary"))
+
+    # attendance_sheet_manager.mark_present("Lim Yan Peng, Gary", training_date)
+    # attendance_sheet_manager.mark_present("Jeremy Ho Rui Yang", training_date)
+
+
+if __name__ == '__main__':
+    main()
