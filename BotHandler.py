@@ -226,7 +226,7 @@ def parse_arguments(text):
 
 def main(): 
     garybot = MyGaryBot()
-    garybot.setDevMode(False)
+    # garybot.setDevMode(True)
     garybot.deploy()
 
 
