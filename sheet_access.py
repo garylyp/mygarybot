@@ -28,11 +28,15 @@ ATTENDANCE_SHEET_NAME = '2nd Quarter'
 ATTENDANCE_SHEET_RANGE = 'A:AG'
 ATTENDANCE_RANGE = ATTENDANCE_SHEET_NAME + '!' + ATTENDANCE_SHEET_RANGE
 
+DATE_FORMATTER = "%d/%m/%Y"
+DATETIME_FORMATTER = "%d/%m/%Y %H%M%S"
+
 # TODO: Make this an object instead. Initialize a sheet object which you can constantly call upon
 def init_sheet():
     """Shows basic usage of the Sheets API.
     Prints values from a sample spreadsheet.
     """
+
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -56,6 +60,7 @@ def init_sheet():
 
     # Call the Sheets API
     sheet = service.spreadsheets()
+
     return sheet
 
 
@@ -142,15 +147,23 @@ def csv_reader_to_list(csv_reader):
 # print(get_recent_birthdays_reply(25))
 
 class AttendanceSheetManager():
-    def __init__(self, spreadsheet):
+
+    SUCCESS_MESSAGE = "{} is marked {} on {}"
+    FAILURE_MESSAGE = "Unable to verify name. Select an option below.\n" + \
+        "(1) {}\n" + \
+        "(2) {}\n" + \
+        "(3) {}\n" + \
+        "(4) None of the above. Enter name again"
+
+    def __init__(self):
         
 
-        self.sheet = spreadsheet
+        self.sheet = init_sheet()
         self.attendance_sheet = self.get_attendance_from_sheet()
         self.date_row = 1
         self.date_col_start = 2
         self.date_col_end = len(self.attendance_sheet[1])
-        self.today = datetime.datetime.strptime(self.attendance_sheet[0][1], "%d/%m/%Y")
+        self.today = datetime.datetime.strptime(self.attendance_sheet[0][1], DATE_FORMATTER)
         self.curr_year = int(self.attendance_sheet[0][0])
         self.name_row_start = 2
         self.name_row_end = len(self.attendance_sheet)
@@ -158,6 +171,8 @@ class AttendanceSheetManager():
 
         self.dates = self.get_training_dates()
         self.names = self.get_names()
+
+        print("You have created an AttendanceManager")
 
         
 
@@ -188,10 +203,10 @@ class AttendanceSheetManager():
         given_month = int(date_string.split("/")[1])
         if earliest_month % 12 <= given_month <= latest_month:
             standard_date = "/" + str(curr_year) + " 235959"
-            return datetime.datetime.strptime(date_string + standard_date, "%d/%m/%Y %H%M%S")
+            return datetime.datetime.strptime(date_string + standard_date, DATETIME_FORMATTER)
         else:
             standard_date = "/" + str(curr_year - 1) + " 235959"
-            return datetime.datetime.strptime(date_string + standard_date, "%d/%m/%Y %H%M%S")
+            return datetime.datetime.strptime(date_string + standard_date, DATETIME_FORMATTER)
 
 
     
@@ -209,6 +224,7 @@ class AttendanceSheetManager():
             if TODAY <= d:
                 return d
         return datetime.datetime.min
+
 
     def get_col_idx(self, next_date):
         if next_date == datetime.datetime.min:
@@ -306,58 +322,108 @@ class AttendanceSheetManager():
             body={'values':[[""]]}
         ).execute()
 
+    def mark_toggle(self, name, date):
+        range = self.get_range(name, date)
+        curr_value = self.sheet.values() \
+                                .get(spreadsheetId=ATTENDANCE_SHEET_ID, range=range) \
+                                .execute() \
+                                .get('values', [])
+        if curr_value == []:
+            self.mark_present(name, date)
+            isMarkPresent = True
+            return isMarkPresent
+        elif curr_value == [['1']]:
+            self.mark_absent(name, date)
+            isMarkPresent = False
+            return isMarkPresent
+
+    def resolve_date(self, input_date):
+        """
+        A method to validate the date string provided by user. 
+        """
+        if input_date is None:
+            date = self.get_next_date()
+        else:
+            date = datetime.datetime.strptime(input_date, DATE_FORMATTER)   
+        return date
+
     # Telegram Bot Entry Point
     def submit_name_to_mark_present(self, input_name, input_date=None):
-        SUCCESS_MESSAGE = "{} is marked PRESENT on {}"
-        FAILURE_MESSAGE = "Unable to verify name. Select a name below if it matches.\n" + \
-            "(1) {}\n" + \
-            "(2) {}\n" + \
-            "(3) {}"
 
         names, diff = self.get_close_match(input_name)
-        if input_date is None:
-            date = self.get_next_date()
-        else:
-            date = datetime.datetime.strptime(input_date + "/" + self.curr_year, "%d/%m%Y")
-
+        date = self.resolve_date(input_date)
         if diff > 0.15:
             self.mark_present(names[0], date)
-            return SUCCESS_MESSAGE.format(names[0], date.strftime("%d/%m/%y"))
-
+            return AttendanceSheetManager.SUCCESS_MESSAGE.format(names[0], 
+                "PRESENT", 
+                date.strftime(DATE_FORMATTER)), []
         else:
-            return FAILURE_MESSAGE.format(names[0], names[1], names[2])
+            return AttendanceSheetManager.FAILURE_MESSAGE.format(names[0], names[1], names[2]), names
 
     def submit_name_to_mark_absent(self, input_name, input_date=None):
-        SUCCESS_MESSAGE = "{} is marked ABSENT on {}"
-        FAILURE_MESSAGE = "Unable to verify name. Select a name below if it matches.\n" + \
-            "(1) {}\n" + \
-            "(2) {}\n" + \
-            "(3) {}"
 
         names, diff = self.get_close_match(input_name)
-        if input_date is None:
-            date = self.get_next_date()
-        else:
-            date = datetime.datetime.strptime(input_date + "/" + self.curr_year, "%d/%m%Y")
-
+        date = self.resolve_date(input_date)
         if diff > 0.15:
             self.mark_absent(names[0], date)
-            return SUCCESS_MESSAGE.format(names[0], date.strftime("%d/%m/%y"))
-
+            return AttendanceSheetManager.SUCCESS_MESSAGE.format(names[0], 
+                "ABSENT", 
+                date.strftime(DATE_FORMATTER)), []
         else:
-            return FAILURE_MESSAGE.format(names[0], names[1], names[2])
+            return AttendanceSheetManager.FAILURE_MESSAGE.format(names[0], names[1], names[2]), names
+
+    def submit_name_to_mark_toggle(self, input_name, input_date=None):
+
+        names, diff = self.get_close_match(input_name)
+        date = self.resolve_date(input_date)
+        if diff > 0.15:
+            isMarkPresent = self.mark_toggle(names[0], date)
+            state = "PRESENT" if isMarkPresent else "ABSENT"
+            return AttendanceSheetManager.SUCCESS_MESSAGE.format(names[0], 
+                state, 
+                date.strftime(DATE_FORMATTER)), []
+        else:
+            return AttendanceSheetManager.FAILURE_MESSAGE.format(names[0], names[1], names[2]), names
         
+    def display_attendance_by_date(self, input_date=None):
+        self.attendance_sheet = self.get_attendance_from_sheet()
+
+        date = self.resolve_date(input_date)
+
+        col_idx = self.get_col_idx(date)
+        output_names = []
+        for i in range(len(self.names)):
+            if len(self.attendance_sheet[i+self.name_row_start]) <= col_idx:
+                continue
+
+            if self.names[i] == "TOTAL":
+                continue
+            
+            elif self.attendance_sheet[i+self.name_row_start][col_idx] == "1":
+                output_names += [self.names[i]]
+        
+        output = "Date: {}\n".format(date.strftime(DATE_FORMATTER))
+        if len(output_names) == 0:
+            output = output + "Nobody present."
+        else:
+            for i in range(len(output_names)):
+                output = output + "{}. {}\n".format(i+1, output_names[i])
+        return output
+
 
 
     
 
-def main():
-    attendance_sheet_manager = AttendanceSheetManager(init_sheet())
-    # print(attendance_sheet_manager.get_attendance_for_member("Lim Yan Peng, Gary"))
+# def main():
+#     attendance_sheet_manager = AttendanceSheetManager()
+#     print(attendance_sheet_manager.display_attendance_by_date())
+#     print(attendance_sheet_manager.submit_name_to_mark_toggle("Gary"))
+#     print(attendance_sheet_manager.display_attendance_by_date())
+#     print(attendance_sheet_manager.submit_name_to_mark_toggle("Gary"))
+#     print(attendance_sheet_manager.display_attendance_by_date())
+#     print(attendance_sheet_manager.submit_name_to_mark_toggle("Gary"))
 
-    # attendance_sheet_manager.mark_present("Lim Yan Peng, Gary", training_date)
-    # attendance_sheet_manager.mark_present("Jeremy Ho Rui Yang", training_date)
 
+# if __name__ == '__main__':
+#     main()
 
-if __name__ == '__main__':
-    main()
