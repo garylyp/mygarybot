@@ -1,1 +1,1 @@
-web: python BotHandler.py
+web: python bot_controller.py
