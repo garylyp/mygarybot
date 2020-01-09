@@ -4,8 +4,8 @@ import datetime
 from sheet_access import *
 
 import logging
-# logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#                      level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                     level=logging.INFO)
 
 ADD_EVENT_DESCRIPTION = "/add - Add a new event\n"
 REMOVE_EVENT_DESCRIPTION = "/remove - Remove an existing event\n"
@@ -23,8 +23,6 @@ GARY_BOT_TOKEN = "969707375:AAHFxeUbgV6crUysoahGFicOLLWmE8Pm4Xc"
 GARY_BOT_NAME = "mygarybot"
 PORT1 = int(os.environ.get('PORT', '8443'))
 
-
-# TODO Implement OOP for BotController
 
 class Bot():
     def __init__(self, token, name, port):
@@ -45,7 +43,7 @@ class Bot():
             self.dispatcher.remove_handler(handler)
         
 
-    def setDevMode(self, is_dev):
+    def set_dev_mode(self, is_dev):
         """
         If set to True, Bot will be detached from Heroku and will run on polling mode via command line
         """
@@ -53,6 +51,7 @@ class Bot():
 
     def deploy(self):
         if self.is_dev_mode:
+            # self.updater.bot.deleteWebhook() # Supposedly not needed
             print("Starting poll...")
             self.updater.start_polling(clean=True)
             self.updater.idle()
@@ -226,7 +225,7 @@ def parse_arguments(text):
 
 def main(): 
     garybot = MyGaryBot()
-    garybot.setDevMode(False)
+    garybot.set_dev_mode(False)
     garybot.deploy()
 
 
