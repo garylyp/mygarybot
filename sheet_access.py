@@ -250,8 +250,7 @@ class AttendanceSheetManager():
 
             # Exact Match
             if name == test:
-                score[i] = 1
-                continue
+                return [self.names[i]] * 3, 1
 
             # Partial Match
             test_split = test.split(" ")
@@ -280,10 +279,12 @@ class AttendanceSheetManager():
         sorted_score = sorted(score, reverse=True)[:num]
         idx = [score.index(s) for s in sorted_score]
         
-        
         closest_match = [self.names[i] for i in idx]
-        
-        diff = (2 * sorted_score[0] - sorted_score[1] - sorted_score[2] )
+        # diff = min(sorted_score[0] - sorted_score[1], sorted_score[0] - sorted_score[2])
+        diff = sorted_score[0] - sorted_score[1]
+        # for i in range(3):
+        #     print(sorted_score[i], closest_match[i])
+        # print(diff)
         return closest_match, diff
     
 
@@ -415,13 +416,18 @@ class AttendanceSheetManager():
     
 
 # def main():
-#     attendance_sheet_manager = AttendanceSheetManager()
-#     print(attendance_sheet_manager.display_attendance_by_date())
-#     print(attendance_sheet_manager.submit_name_to_mark_toggle("Gary"))
-#     print(attendance_sheet_manager.display_attendance_by_date())
-#     print(attendance_sheet_manager.submit_name_to_mark_toggle("Gary"))
-#     print(attendance_sheet_manager.display_attendance_by_date())
-#     print(attendance_sheet_manager.submit_name_to_mark_toggle("Gary"))
+    # attendance_sheet_manager = AttendanceSheetManager()
+    # print(attendance_sheet_manager.display_attendance_by_date())
+    # print(attendance_sheet_manager.submit_name_to_mark_toggle("Gary"))
+    # print(attendance_sheet_manager.display_attendance_by_date())
+    # print(attendance_sheet_manager.submit_name_to_mark_toggle("Gary"))
+    # print(attendance_sheet_manager.display_attendance_by_date())
+    # print(attendance_sheet_manager.submit_name_to_mark_toggle("zaw"))
+    # print(attendance_sheet_manager.submit_name_to_mark_toggle("lim"))
+    # print(attendance_sheet_manager.submit_name_to_mark_toggle("chua"))
+    # print(attendance_sheet_manager.submit_name_to_mark_toggle("jian hui"))
+    # print(attendance_sheet_manager.submit_name_to_mark_toggle("valerie"))
+    # print(attendance_sheet_manager.submit_name_to_mark_toggle("julia"))
 
 
 # if __name__ == '__main__':
