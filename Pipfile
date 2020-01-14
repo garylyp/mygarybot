@@ -11,6 +11,9 @@ google-api-python-client = "*"
 google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
 numpy = "*"
+googleapiclient-discovery = "*"
+googleapiclient = "*"
+google-auth-oauthlib-flow = "*"
 
 [requires]
 python_version = "3.7"

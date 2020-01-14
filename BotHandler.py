@@ -97,6 +97,7 @@ class MyGaryBot(Bot):
         ]
 
         self.add_handlers(self.commands)
+        self.dispatcher.add_error_handler(self.error)
 
         self.attendance_manager = None
 
@@ -215,6 +216,13 @@ class MyGaryBot(Bot):
     # For debugging purposes
     def echo(self, bot, update):
         update.message.reply_text(update.message.text, quote=True)
+
+    def error(self, bot, update, error):
+        try:
+            raise error
+        except Exception as e:
+            output = e
+        update.message.reply_text(output, quote=True)
 
 def parse_arguments(text):
     for i in range(len(text)-1):

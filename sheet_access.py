@@ -22,7 +22,6 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 # The ID and range of a sample spreadsheet.
 BIRTHDAY_SHEET_ID ='1LuVv62bj1DD-whvJydT_maMMbe7h3yWQYXzB-PkKDJQ'
 BIRTHDAY_RANGE = 'AY1920!A:J'
-# TODO: Should test on a dummy attendance sheet first
 ATTENDANCE_SHEET_ID = '1XfjN4aiK4wVaioNYep8Wsfqww3yVJQEfB47zekmMmOQ'
 ATTENDANCE_SHEET_NAME = '2nd Quarter'
 ATTENDANCE_SHEET_RANGE = 'A:AG'
@@ -31,7 +30,6 @@ ATTENDANCE_RANGE = ATTENDANCE_SHEET_NAME + '!' + ATTENDANCE_SHEET_RANGE
 DATE_FORMATTER = "%d/%m/%Y"
 DATETIME_FORMATTER = "%d/%m/%Y %H%M%S"
 
-# TODO: Make this an object instead. Initialize a sheet object which you can constantly call upon
 def init_sheet():
     """Shows basic usage of the Sheets API.
     Prints values from a sample spreadsheet.
@@ -163,8 +161,8 @@ class AttendanceSheetManager():
         self.date_row = 1
         self.date_col_start = 2
         self.date_col_end = len(self.attendance_sheet[1])
-        self.today = datetime.datetime.strptime(self.attendance_sheet[0][1], DATE_FORMATTER)
         self.curr_year = int(self.attendance_sheet[0][0])
+        self.today = datetime.datetime.strptime(self.attendance_sheet[0][1] + "/" + str(self.curr_year), DATE_FORMATTER)
         self.name_row_start = 2
         self.name_row_end = len(self.attendance_sheet)
         self.name_col = 1
