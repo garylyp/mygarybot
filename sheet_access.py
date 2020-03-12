@@ -23,7 +23,10 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 BIRTHDAY_SHEET_ID ='1LuVv62bj1DD-whvJydT_maMMbe7h3yWQYXzB-PkKDJQ'
 BIRTHDAY_RANGE = 'AY1920!A:J'
 ATTENDANCE_SHEET_ID = '1XfjN4aiK4wVaioNYep8Wsfqww3yVJQEfB47zekmMmOQ'
-ATTENDANCE_SHEET_NAME = '2nd Quarter'
+if datetime.date.today() < datetime.date(2020, 3, 17):
+    ATTENDANCE_SHEET_NAME = '2nd Quarter'
+else:
+    ATTENDANCE_SHEET_NAME = '3rd Quarter'
 ATTENDANCE_SHEET_RANGE = 'A:AG'
 ATTENDANCE_RANGE = ATTENDANCE_SHEET_NAME + '!' + ATTENDANCE_SHEET_RANGE
 
