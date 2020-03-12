@@ -149,12 +149,12 @@ def csv_reader_to_list(csv_reader):
 
 class AttendanceSheetManager():
 
-    SUCCESS_MESSAGE = "{} is marked {} on {}"
-    FAILURE_MESSAGE = "Unable to verify name. Select an option below.\n" + \
+    SUCCESS_MESSAGE = "Yay! {} is marked {} on {}"
+    FAILURE_MESSAGE = "Too bad...No close match with \"{}\".\nSelect ONE of the options:\n" + \
         "(1) {}\n" + \
         "(2) {}\n" + \
         "(3) {}\n" + \
-        "(4) None of the above. Enter name again"
+        "(4) None of the above."
 
     def __init__(self):
         
@@ -302,12 +302,17 @@ class AttendanceSheetManager():
         if row_idx < 0:
             raise ValueError("Name not found.")
 
-        col_range = chr(ord('A') + col_idx)
+        if col_idx < 26:
+            col_range= chr(ord('A') + col_idx % 26)
+        else:
+            col_range = chr(ord('A') + col_idx // 26 - 1) + chr(ord('A') + col_idx % 26)
+        
         range = ATTENDANCE_SHEET_NAME + '!' + str(col_range) + str(row_idx)
         return range
 
     def mark_present(self, name, date):
         range = self.get_range(name, date)
+        print(range)
         self.sheet.values().update(
             spreadsheetId=ATTENDANCE_SHEET_ID,
             range=range,
@@ -356,11 +361,11 @@ class AttendanceSheetManager():
         date = self.resolve_date(input_date)
         if diff > 0.15:
             self.mark_present(names[0], date)
-            return AttendanceSheetManager.SUCCESS_MESSAGE.format(names[0], 
+            return AttendanceSheetManager.SUCCESS_MESSAGE.format(self.prettify_name(names[0]), 
                 "PRESENT", 
                 date.strftime(DATE_FORMATTER)), []
         else:
-            return AttendanceSheetManager.FAILURE_MESSAGE.format(names[0], names[1], names[2]), names
+            return AttendanceSheetManager.FAILURE_MESSAGE.format(input_name, names[0], names[1], names[2]), names
 
     def submit_name_to_mark_absent(self, input_name, input_date=None):
 
@@ -368,11 +373,11 @@ class AttendanceSheetManager():
         date = self.resolve_date(input_date)
         if diff > 0.15:
             self.mark_absent(names[0], date)
-            return AttendanceSheetManager.SUCCESS_MESSAGE.format(names[0], 
+            return AttendanceSheetManager.SUCCESS_MESSAGE.format(self.prettify_name(names[0]), 
                 "ABSENT", 
                 date.strftime(DATE_FORMATTER)), []
         else:
-            return AttendanceSheetManager.FAILURE_MESSAGE.format(names[0], names[1], names[2]), names
+            return AttendanceSheetManager.FAILURE_MESSAGE.format(input_name, names[0], names[1], names[2]), names
 
     def submit_name_to_mark_toggle(self, input_name, input_date=None):
 
@@ -381,11 +386,11 @@ class AttendanceSheetManager():
         if diff > 0.15:
             isMarkPresent = self.mark_toggle(names[0], date)
             state = "PRESENT" if isMarkPresent else "ABSENT"
-            return AttendanceSheetManager.SUCCESS_MESSAGE.format(names[0], 
+            return AttendanceSheetManager.SUCCESS_MESSAGE.format(self.prettify_name(names[0]), 
                 state, 
                 date.strftime(DATE_FORMATTER)), []
         else:
-            return AttendanceSheetManager.FAILURE_MESSAGE.format(names[0], names[1], names[2]), names
+            return AttendanceSheetManager.FAILURE_MESSAGE.format(input_name, names[0], names[1], names[2]), names
         
     def display_attendance_by_date(self, input_date=None):
         self.attendance_sheet = self.get_attendance_from_sheet()
@@ -413,7 +418,36 @@ class AttendanceSheetManager():
         return output
 
 
+    def prettify_name(self, input_name):
+        if "Jian Hui" in input_name:
+            return "Jian Hui the Captain"
 
+        elif "Jasmine" in input_name:
+            return "Plessidun"
+
+        elif "Le Rae" in input_name:
+            return "Le Rae the fatass"
+
+        elif "ChuQiao" in input_name:
+            return "lousy chuqiao"
+
+        elif "Mindy" in input_name:
+            return "time-to-wake-up-mindy"
+
+        elif "Jeremy" in input_name:
+            return "Minister Mentor Ho"
+
+        elif "Julia" in input_name:
+            return "Joolyer"
+
+        elif "Chua Kai En" in input_name:
+            return "Chua 🐷"
+
+        elif "Chua Qi Shan" in input_name:
+            return "Chua 🙈"
+
+        else:
+            return input_name
     
 
 # def main():

@@ -69,9 +69,9 @@ class Bot():
 class MyGaryBot(Bot):
 
     PROMPT_FOR_NAMES = "Enter the next name to continue. To end, enter \"end\"."
-    TAKE_ATTENDANCE_TOGGLE_MODE_GUIDE = "You have entered attendance-taking TOGGLE mode. " + \
+    TAKE_ATTENDANCE_TOGGLE_MODE_GUIDE = "DATE: {}\nTOGGLE mode. \n" + \
         "Enter names to toggle their state between PRESENT and ABSENT."
-    TAKE_ATTENDANCE_GUIDE = "You have entered attendance-taking mode. " + \
+    TAKE_ATTENDANCE_GUIDE = "DATE: {}\nNORMAL mode. \n" + \
         "Enter names to mark them as PRESENT."
 
     def __init__(self):
@@ -134,7 +134,8 @@ class MyGaryBot(Bot):
         if self.attendance_manager is None:
             self.attendance_manager = AttendanceSheetManager()
 
-        update.message.reply_text(MyGaryBot.TAKE_ATTENDANCE_GUIDE, quote=False)
+        curr_date = self.attendance_manager.get_next_date().strftime(DATE_FORMATTER)
+        update.message.reply_text(MyGaryBot.TAKE_ATTENDANCE_GUIDE.format(curr_date), quote=False)
         output = MyGaryBot.PROMPT_FOR_NAMES
         update.message.reply_text(output, quote=False)
 
@@ -147,8 +148,9 @@ class MyGaryBot(Bot):
         self.add_handlers(self.attendance_handlers)
         if self.attendance_manager is None:
             self.attendance_manager = AttendanceSheetManager()
-
-        update.message.reply_text(MyGaryBot.TAKE_ATTENDANCE_TOGGLE_MODE_GUIDE, quote=False)
+        
+        curr_date = self.attendance_manager.get_next_date().strftime(DATE_FORMATTER)
+        update.message.reply_text(MyGaryBot.TAKE_ATTENDANCE_TOGGLE_MODE_GUIDE.format(curr_date), quote=False)
         output = MyGaryBot.PROMPT_FOR_NAMES
         update.message.reply_text(output, quote=False)
 
