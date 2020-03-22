@@ -264,7 +264,8 @@ class AttendanceSheetManager():
             score[i] *= (WEIGHT[0])
             
             # Current Attendance
-            percentage = self.get_attendance_for_member(self.names[i]) / self.get_attendance_for_member('TOTAL')
+            total_attendance = max(self.get_attendance_for_member('TOTAL'), 1)
+            percentage = self.get_attendance_for_member(self.names[i]) / total_attendance
             score[i] += percentage * WEIGHT[1]
                 
 
